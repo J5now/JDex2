@@ -1,3 +1,8 @@
+### 项目介绍
+
+[JDex：基于Xposed / Lsposed的主动调用抽取壳脱壳工具](https://bbs.kanxue.com/thread-290669.htm)
+
+
 ### 使用方法简介
 由于配置文件存在本地，需要读写存储权限
 
