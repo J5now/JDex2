@@ -365,11 +365,16 @@ public class JSHook implements IXposedHookLoadPackage {
         // 根据TARGET_FILE判断是否是我们想要脱壳的APP
         // 使用前记得给予目标APP内存读写权限
         Properties props = new Properties();
-        try (InputStream input = new FileInputStream("/sdcard/Download/config.properties")) {
-            props.load(input);
+        try (InputStream input = new FileInputStream("/data/data/" + loadPackageParam.packageName + "/files/config.properties")) {
+                props.load(input);
+        } catch (Throwable e){
+//            Log.e(ErrTAG, "Load config failed!" + e);
         }
 
         String targetApp = props.getProperty("targetApp");
+        if(!targetApp.equals(loadPackageParam.packageName)){
+            return;
+        }
         invokeDebugger = Boolean.parseBoolean(props.getProperty("invokeDebugger"));
         boolean hook = Boolean.parseBoolean(props.getProperty("hook"));
         innerclassesFilter = Boolean.parseBoolean(props.getProperty("innerclassesFilter"));
@@ -400,7 +405,7 @@ public class JSHook implements IXposedHookLoadPackage {
         if (!loadPackageParam.packageName.equals(targetApp))
             return;
         LogInfo(loadPackageParam);
-        final String outDir = "/sdcard/dumpDex/" + loadPackageParam.packageName + "/";
+        final String outDir = "/data/data/" + loadPackageParam.packageName + "/dumpDex/";
         File dir = new File(outDir);
         if (!dir.exists() && !dir.mkdirs()) {
             Log.e(TAG, "Failed to create output directory: " + outDir);
