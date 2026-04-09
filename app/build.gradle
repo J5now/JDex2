@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'com.jsnow.jdex2'
-    compileSdk 32
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.jsnow.jdex2"
         minSdk 24
-        targetSdk 32
+        targetSdk 36
         versionCode 2
         versionName "1.1"
 
