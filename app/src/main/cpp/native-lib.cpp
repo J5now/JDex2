@@ -88,7 +88,21 @@ static const uint8_t* findBegin(jlong dexFilePtr) {
             return candidate;
         }
     }
-    return nullptr;
+
+    const uint8_t* candidate = *((const uint8_t**)((uint8_t*)dexFilePtr + sizeof(long)));
+    LOGE("Force Dump From: 0x%llx", candidate);
+    if ((uintptr_t)candidate < 0x10000) {
+        LOGE("offset %d: candidate 0x%llx too small, skip",
+             sizeof(long), (unsigned long long)candidate);
+        return nullptr;
+    }
+
+    if (!isAddressReadable(candidate, 0x70)) {
+        LOGE("offset %d: candidate 0x%llx not readable, skip",
+             sizeof(long), (unsigned long long)candidate);
+        return nullptr;
+    }
+    return candidate;
 }
 
 

@@ -6,7 +6,7 @@
 
 ## 应用场景
 
-可以应对大部分的企业抽取壳和免费壳的Dex加固
+可以应对未对Lsposed设置有效检测的大部分的企业抽取壳和免费壳的Dex加固
 
 ## 使用方法简介
 
@@ -14,13 +14,13 @@
 
 `MainActivity`中有如下配置，会根据输入将配置写到`/data/data/package.name/files/config.properties`路径下，也可以手动编辑，除了目标包名，其它配置多个路径可以通过`,`间隔
 
+dump后的dex位于`/data/data/app包名/dumpDex/`下
+
 白名单和黑名单只是不做主动调用，但是仍然会进行dump
 
 <img width="586" height="710" alt="图片" src="images/134cd10f-308a-43cc-9a82-599d2ec301e6.png" />
 
 
-* **每次更新本项目都需要将与目标App对应架构的so放到`/data/local/tmp/`目录下并且给予777权限**
-  * 仅测试了在arm64下的稳定性尚佳
 * targetApp：目标APP包名
 * targetClass：指定要脱的壳的包路径`com.xxx`（不设置可能会导致 JNI 引用过多，通常建议以App的包名前两层作为筛选）
 * blackListClass：填写某些导致App崩溃的类，如果崩溃则需要通过`JDex2 Debugger`的日志对某些类或者包进行筛选（由于写到本地性能开销过大所以没有写）
@@ -35,14 +35,14 @@
 
 某最新企业抽取壳脱壳效果展示：
 
- <img width="1799" height="1090" alt="image-20260406203358574" src="images/9f71b8f8-11db-47e6-a423-55a42ee1f2fe.png" />
+ <img width="1799" height="1090" alt="image-20260406203358574" src="images/9f71b8f8-11db-47e6-a423-55a42ee1f2fe.png" style="zoom:67%;" />
 
 
 ## 本工具的局限性
 
 * 只能对抗类级别的方法抽取，而基于方法粒度的抽取则会无法进行，并且无法应对方法执行结束后重新抽取的情况，还有真正开始执行字节码才动态解密的情况
 * 各个方面的便捷性不足，一些崩溃问题可能需要参考崩溃日志进行分析，而且不算很完善
-* 基于 Android9.0+ 开发，未适配 Android7 系列及以下
+* 基于 Android9.0+ 开发，未适配 Android7 系列及以下，Android8未知
 * JNI全局引用数量超过最大上限 51200 个导致崩溃
   * 如果类的数量过于庞大导致目标App崩溃，需要重新进行一次脱壳来重新脱剩下的类，配置无需修改，会自动识别并且跳过已经Dump的类
 * 高度依赖于Lsposed的隐蔽性，如果Lsposed被检测则会直接闪退无法进行脱壳
