@@ -1,5 +1,6 @@
 package com.jsnow.jdex2;
 
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -32,7 +33,7 @@ public class JSHook implements IXposedHookLoadPackage {
     private static String TAG = "JDex2";
     private static String ErrTAG = "JDex2 Error";
     private static String DebugTag = "JDex2 Debugger";
-    private static final String SO1_PATH = "/data/local/tmp/libjdex2.so";
+//    private static final String SO1_PATH = "/data/local/tmp/libjdex2.so";
 
     private static boolean innerclassesFilter = false;
     private static boolean nativeLoaded = false;
@@ -68,8 +69,9 @@ public class JSHook implements IXposedHookLoadPackage {
         if (nativeLoaded)
             return;
         try {
-            System.load(SO1_PATH);
-            Log.e(TAG, "Native loaded: " + SO1_PATH);
+            // 这里直接加载了so，lsposed可以直接注入so
+            System.loadLibrary("jdex2");
+            Log.e(TAG, "Native loaded: jdex2" );
             nativeLoaded = true;
         } catch (Throwable t) {
             Log.e(ErrTAG, "Load Library failed", t);
@@ -364,17 +366,27 @@ public class JSHook implements IXposedHookLoadPackage {
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
         // 根据TARGET_FILE判断是否是我们想要脱壳的APP
         // 使用前记得给予目标APP内存读写权限
+        // 貌似不用给
+
+
         Properties props = new Properties();
-        try (InputStream input = new FileInputStream("/data/data/" + loadPackageParam.packageName + "/files/config.properties")) {
+
+        Log.d(TAG,Environment.getExternalStorageDirectory().getAbsolutePath()+"/" + loadPackageParam.packageName + "/files/config.properties");
+
+        try (InputStream input = new FileInputStream(Environment.getExternalStorageDirectory().getAbsolutePath()+"/Android/data/" + loadPackageParam.packageName + "/files/config.properties")) {
                 props.load(input);
         } catch (Throwable e){
 //            Log.e(ErrTAG, "Load config failed!" + e);
+            return;
         }
 
+
         String targetApp = props.getProperty("targetApp");
+
         if(!targetApp.equals(loadPackageParam.packageName)){
             return;
         }
+
         invokeDebugger = Boolean.parseBoolean(props.getProperty("invokeDebugger"));
         boolean hook = Boolean.parseBoolean(props.getProperty("hook"));
         innerclassesFilter = Boolean.parseBoolean(props.getProperty("innerclassesFilter"));
@@ -399,13 +411,15 @@ public class JSHook implements IXposedHookLoadPackage {
         for(String white : whiteList){
             Log.e(TAG, "White List: " + white);
         }
+        Log.d(TAG,"list ok");
+
         // 对包名和线程名都做过滤，否则会导致对新开的线程也进行脱壳
         if (!loadPackageParam.processName.equals(targetApp))
             return;
         if (!loadPackageParam.packageName.equals(targetApp))
             return;
         LogInfo(loadPackageParam);
-        final String outDir = "/data/data/" + loadPackageParam.packageName + "/dumpDex/";
+        final String outDir = Environment.getExternalStorageDirectory().getAbsolutePath()+"/Android/data/"  + loadPackageParam.packageName + "/dumpDex/";
         File dir = new File(outDir);
         if (!dir.exists() && !dir.mkdirs()) {
             Log.e(TAG, "Failed to create output directory: " + outDir);
