@@ -1,5 +1,6 @@
 package com.jsnow.jdex2;
 
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -32,7 +33,7 @@ public class JSHook implements IXposedHookLoadPackage {
     private static String TAG = "JDex2";
     private static String ErrTAG = "JDex2 Error";
     private static String DebugTag = "JDex2 Debugger";
-    private static String SO_PATH = "/data/data/";
+//    private static final String SO1_PATH = "/data/local/tmp/libjdex2.so";
 
     private static boolean innerclassesFilter = false;
     private static boolean nativeLoaded = false;
@@ -64,12 +65,13 @@ public class JSHook implements IXposedHookLoadPackage {
 //            "com.baidu.location",
     };
 
-    private static synchronized void ensureNativeLoaded(XC_LoadPackage.LoadPackageParam loadPackageParam) {
+    private static synchronized void ensureNativeLoaded() {
         if (nativeLoaded)
             return;
         try {
-            System.load(SO_PATH + loadPackageParam.packageName + "/lib/libjdex2.so");
-            Log.e(TAG, "Native loaded: " + SO_PATH + loadPackageParam.packageName + "/lib/libjdex2.so");
+            // 这里直接加载了so，lsposed可以直接注入so
+            System.loadLibrary("jdex2");
+            Log.e(TAG, "Native loaded: jdex2" );
             nativeLoaded = true;
         } catch (Throwable t) {
             Log.e(ErrTAG, "Load Library failed", t);
@@ -368,17 +370,27 @@ public class JSHook implements IXposedHookLoadPackage {
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
         // 根据TARGET_FILE判断是否是我们想要脱壳的APP
         // 使用前记得给予目标APP内存读写权限
+        // 貌似不用给
+
+
         Properties props = new Properties();
-        try (InputStream input = new FileInputStream("/data/data/" + loadPackageParam.packageName + "/files/config.properties")) {
+
+        Log.d(TAG,Environment.getExternalStorageDirectory().getAbsolutePath()+"/" + loadPackageParam.packageName + "/files/config.properties");
+
+        try (InputStream input = new FileInputStream(Environment.getExternalStorageDirectory().getAbsolutePath()+"/Android/data/" + loadPackageParam.packageName + "/files/config.properties")) {
                 props.load(input);
         } catch (Throwable e){
-            Log.e(ErrTAG, "Load config failed!" + e);
+//            Log.e(ErrTAG, "Load config failed!" + e);
+            return;
         }
 
+
         String targetApp = props.getProperty("targetApp");
+
         if(!targetApp.equals(loadPackageParam.packageName)){
             return;
         }
+
         invokeDebugger = Boolean.parseBoolean(props.getProperty("invokeDebugger"));
         boolean hook = Boolean.parseBoolean(props.getProperty("hook"));
         innerclassesFilter = Boolean.parseBoolean(props.getProperty("innerclassesFilter"));
@@ -409,7 +421,7 @@ public class JSHook implements IXposedHookLoadPackage {
         if (!loadPackageParam.packageName.equals(targetApp))
             return;
         LogInfo(loadPackageParam);
-        final String outDir = "/data/data/" + loadPackageParam.packageName + "/dumpDex/";
+        final String outDir = Environment.getExternalStorageDirectory().getAbsolutePath()+"/Android/data/"  + loadPackageParam.packageName + "/dumpDex/";
         File dir = new File(outDir);
         if (!dir.exists() && !dir.mkdirs()) {
             Log.e(TAG, "Failed to create output directory: " + outDir);
@@ -420,7 +432,7 @@ public class JSHook implements IXposedHookLoadPackage {
         // 为了应对Native层进行Load导致某些类脱不全的情况，但是Hook方法会更容易被检测到
         if (hook) {
             Log.e(TAG, "Dump Dex By Hook");
-            ensureNativeLoaded(loadPackageParam);
+            ensureNativeLoaded();
             if (!nativeLoaded) return;
 
             final AtomicBoolean dumped = new AtomicBoolean(false);
@@ -476,7 +488,7 @@ public class JSHook implements IXposedHookLoadPackage {
                         return;
                     }
                     Log.e(TAG, "Fallback: dumping from lpparam.classLoader");
-                    ensureNativeLoaded(loadPackageParam);
+                    ensureNativeLoaded();
                     if (!nativeLoaded) return;
 
                     ClassLoader cl = loadPackageParam.classLoader;
@@ -500,10 +512,9 @@ public class JSHook implements IXposedHookLoadPackage {
                 @Override
                 public void run() {
                     try {
-
                         // sleep 10秒，等待壳加载结束
                         Thread.sleep(10000);
-                        ensureNativeLoaded(loadPackageParam);
+                        ensureNativeLoaded();
                         if (!nativeLoaded) {
                             Log.e(TAG, "Native library not loaded, abort!");
                             return;
