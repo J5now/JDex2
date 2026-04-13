@@ -18,7 +18,7 @@ dump后的dex位于`/sdcard/Android/data/包名/dumpDex/`下
 
 白名单和黑名单只是不做主动调用，但是仍然会进行dump
 
-<img width="586" height="710" alt="图片" src="images/134cd10f-308a-43cc-9a82-599d2ec301e6.png" />
+![image-20260413193801812](images/image-20260413193801812.png)
 
 
 * targetApp：目标APP包名
