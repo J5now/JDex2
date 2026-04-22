@@ -1,5 +1,6 @@
 package com.jsnow.jdex2;
 
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -380,10 +381,16 @@ public class JSHook implements IXposedHookLoadPackage {
 
         Log.d(TAG,Environment.getExternalStorageDirectory().getAbsolutePath()+"/" + loadPackageParam.packageName + "/files/config.properties");
 
-        try (InputStream input = new FileInputStream(Environment.getExternalStorageDirectory().getAbsolutePath()+"/Android/data/" + loadPackageParam.packageName + "/files/config.properties")) {
-                props.load(input);
+        String config;
+        if (Build.VERSION.SDK_INT >= 31) {
+            config = Environment.getExternalStorageDirectory().getAbsolutePath()+"/Android/\u200Bdata/" + loadPackageParam.packageName + "/files/config.properties";
+        } else {
+            config = Environment.getExternalStorageDirectory().getAbsolutePath()+"/Android/data/" + loadPackageParam.packageName + "/files/config.properties";
+        }
+        try (InputStream input = new FileInputStream(config)) {
+            props.load(input);
         } catch (Throwable e){
-//            Log.e(ErrTAG, "Load config failed!" + e);
+            Log.e(ErrTAG, "Load config failed!" + e);
             return;
         }
 
@@ -425,7 +432,13 @@ public class JSHook implements IXposedHookLoadPackage {
         if (!loadPackageParam.packageName.equals(targetApp))
             return;
         LogInfo(loadPackageParam);
-        final String outDir = Environment.getExternalStorageDirectory().getAbsolutePath()+"/Android/data/"  + loadPackageParam.packageName + "/dumpDex/";
+        final String outDir;
+        // Android12以上需要使用零宽字符绕过来向目标app中写入
+        if (Build.VERSION.SDK_INT >= 31) {
+            outDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/\u200Bdata/" + loadPackageParam.packageName + "/dumpDex/";
+        } else {
+            outDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + loadPackageParam.packageName + "/dumpDex/";
+        }
         File dir = new File(outDir);
         if (!dir.exists() && !dir.mkdirs()) {
             Log.e(TAG, "Failed to create output directory: " + outDir);
